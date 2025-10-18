@@ -121,8 +121,9 @@ scaryBtn.addEventListener("click", () => {
 });
 </script>
 
-  <!-- 媒体资源（加 v=highfix 规避缓存） -->
-  <audio id="bgm" src="1.mp3?v=highfix" preload="auto" autoplay loop></audio>
+  <!-- 背景音乐：不预设 src，不默认循环，按逻辑切换 -->
+  <audio id="bgm" preload="auto"></audio>
+
   <div class="video-overlay" id="videoOverlay" role="dialog" aria-label="蛋糕视频">
     <button class="close-btn" id="closeVideo">关闭 ✕</button>
     <div class="video-wrap">
@@ -152,7 +153,7 @@ try{
     rockets.push({ x, y:H+12, vx:rnd(-0.7,0.7), vy:rnd(-12.5,-10.2), hue:rnd(0,360), bloom:rnd(140,220) });
   }
   function explode(x,y,hue,n){
-    for(let i=0;i<n;i++){
+    for (let i=0;i<n;i++){
       const a=Math.random()*Math.PI*2, s=Math.pow(Math.random(),0.25)*rnd(2.2,6.6);
       const [r,g,b]=hsv(hue+rnd(-14,14), .82, 1);
       particles.push({ x,y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:rnd(70,120), age:0, r,g,b });
@@ -162,46 +163,70 @@ try{
     ctx.globalCompositeOperation='destination-out';
     ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.fillRect(0,0,W,H);
     ctx.globalCompositeOperation='lighter';
-    // 火箭：更高爆（12%~22%）
-    for(let i=rockets.length-1;i>=0;i--){
+    // 火箭
+    for (let i=rockets.length-1;i>=0;i--){
       const r=rockets[i];
       r.x+=r.vx; r.y+=r.vy; r.vy+=G*0.40;
       ctx.fillStyle='rgba(255,255,255,.75)'; ctx.fillRect(r.x, r.y, 2, 2);
-      if(r.vy>-0.8 || r.y < H * rnd(0.12, 0.22)){ explode(r.x, r.y, r.hue, r.bloom); rockets.splice(i,1); }
+      if (r.vy>-0.8 || r.y < H * rnd(0.12, 0.22)){ explode(r.x, r.y, r.hue, r.bloom); rockets.splice(i,1); }
     }
     // 粒子
-    for(let i=particles.length-1;i>=0;i--){
+    for (let i=particles.length-1;i>=0;i--){
       const p=particles[i];
       p.vx*=DRAG; p.vy=p.vy*DRAG+G; p.x+=p.vx; p.y+=p.vy; p.age++;
       const a=Math.max(0,1 - p.age/p.life);
       ctx.fillStyle=`rgba(${p.r|0},${p.g|0},${p.b|0},${a})`;
       ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2); ctx.fill();
-      if(p.age>p.life || p.y>H+16) particles.splice(i,1);
+      if (p.age>p.life || p.y>H+16) particles.splice(i,1);
     }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
 
   // 打开就有烟花 + 持续发射
-  for(let i=0;i<4;i++) setTimeout(()=>spawnRocket(rnd(W*0.3,W*0.7)), i*180);
+  for (let i=0;i<4;i++) setTimeout(()=>spawnRocket(rnd(W*0.3,W*0.7)), i*180);
   setInterval(()=>spawnRocket(), 900);
 
   // 交互
-  addEventListener('pointerdown', e=>{ for(let i=0;i<2;i++) spawnRocket(e.clientX); });
+  addEventListener('pointerdown', e=>{ for (let i=0;i<2;i++) spawnRocket(e.clientX); });
   const replayBtn=document.getElementById('replay');
-  if(replayBtn){ replayBtn.addEventListener('click', ()=>{ for(let i=0;i<6;i++) setTimeout(()=>spawnRocket(), i*140); }); }
+  if (replayBtn){ replayBtn.addEventListener('click', ()=>{ for (let i=0;i<6;i++) setTimeout(()=>spawnRocket(), i*140); }); }
 
 }catch(err){ console.error('Fireworks error:', err); }
 
 try{
-  // 音乐：从 index.html 进来更稳；加 v 避缓存
+  // 背景音乐逻辑：
+  // 若从 index.html 跳入（?play=1），先播“思思.mp3”一次；结束后切到“1.mp3”并循环。
+  // 否则直接循环“1.mp3”。
   const audio = document.getElementById('bgm');
   const qs = new URLSearchParams(location.search);
-  if(qs.get('play')==='1'){
-    const play=()=>audio && audio.play().catch(()=>{});
-    setTimeout(play,0);
-    addEventListener('pointerdown',play,{once:true});
-    addEventListener('visibilitychange',()=>{ if(!document.hidden) play(); });
+  const fromIndex = qs.get('play') === '1';
+
+  const safePlay = () => audio && audio.play().catch(()=>{});
+
+  if (fromIndex) {
+    // 先播 思思.mp3 一次
+    audio.src  = "思思.mp3";
+    audio.loop = false;
+
+    const onFirstEnded = () => {
+      audio.removeEventListener('ended', onFirstEnded);
+      audio.src  = "1.mp3";
+      audio.loop = true;
+      safePlay();
+    };
+    audio.addEventListener('ended', onFirstEnded);
+
+    // 触发播放（移动端需要手势，已从 index 点进来通常可用）
+    setTimeout(safePlay, 0);
+    addEventListener('pointerdown', safePlay, { once:true });
+    addEventListener('visibilitychange', ()=>{ if(!document.hidden) safePlay(); });
+
+  } else {
+    // 直接循环 1.mp3
+    audio.src  = "1.mp3";
+    audio.loop = true;
+    // 不强制自动播放，避免无手势被浏览器拦截
   }
 }catch(err){ console.error('Audio error:', err); }
 
@@ -213,20 +238,16 @@ try{
   const closeVideo = document.getElementById('closeVideo');
   const bgm        = document.getElementById('bgm');
 
-  // 与视频同播的音频（带版本参数避缓存，可改为 '5.mp3'）
   let cakeBg = new Audio('5.mp3?v=highfix');
 
-  if(cakeBtn && overlay && cakeVideo && closeVideo){
+  if (cakeBtn && overlay && cakeVideo && closeVideo){
     cakeBtn.addEventListener('click', async () => {
       overlay.classList.add('show');
       try{ bgm.pause(); }catch(e){}
 
       try{
-        // 每次从头开始
         cakeVideo.currentTime = 0;
         cakeBg.currentTime    = 0;
-
-        // 先启动视频（点击手势已获取），再启动 5.mp3（同步播放）
         await cakeVideo.play();
         await cakeBg.play();
       }catch(e){
