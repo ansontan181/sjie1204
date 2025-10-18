@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>给你的一个小惊喜 🎁</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg1: #0f1021; --bg2:#1b1e3b; --ac:#ffb703; --btn:#ffd166; --txt:#f6f7fb;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{
+      margin:0; color:var(--txt); font-family: Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(1200px 800px at 70% 20%, #2a2f6d55, transparent 70%), linear-gradient(160deg,var(--bg1),var(--bg2));
+      overflow:hidden;
+    }
+    .stars{position:fixed; inset:0; pointer-events:none;}
+    .wrap{min-height:100%; display:grid; place-items:center; padding:48px;}
+    .card{
+      width:min(780px, 92vw); text-align:center; padding:56px 40px; border-radius:28px; backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, #ffffff10, #ffffff06); border: 1px solid #ffffff1a; box-shadow: 0 20px 60px #0008, inset 0 1px 0 #fff1;
+    }
+    h1{font-weight:800; font-size: clamp(28px, 5vw, 54px); margin:0 0 12px; letter-spacing:.5px}
+    .scribble{font-family:"Zhi Mang Xing", cursive; font-size: clamp(28px, 6vw, 60px); color:#ffd6a5; margin:8px 0 18px}
+    p{opacity:.9; margin:0 auto 28px; line-height:1.7; font-size: clamp(14px, 2.6vw, 18px); max-width:52ch}
+    .btn{
+      appearance:none; border:0; cursor:pointer; padding:18px 28px; border-radius:16px; font-weight:800; letter-spacing:.6px; font-size: clamp(16px, 3.2vw, 20px);
+      background: linear-gradient(180deg, var(--btn), #ffb703); color:#3c2a00; box-shadow: 0 12px 24px #ffb70344, inset 0 -2px 0 #c98d00; transition: transform .12s ease, box-shadow .2s ease;
+    }
+    .btn:hover{transform: translateY(-1px); box-shadow: 0 18px 34px #ffb70355, inset 0 -2px 0 #c98d00}
+    .btn:active{transform: translateY(1px)}
+    .hint{opacity:.7; margin-top:14px; font-size:14px}
+    footer{position:fixed; left:0; right:0; bottom:16px; text-align:center; opacity:.5; font-size:12px}
+  </style>
+</head>
+<body>
+  <canvas class="stars" id="bgStars"></canvas>
+  <div class="wrap">
+    <div class="card">
+      <h1>有个惊喜要给你 ✨</h1>
+      <div class="scribble">点开下一页看看吧</div>
+      <p>今天是特别的一天。我为你准备了一个小小的网页礼物。<br>准备好了吗？点下面这个按钮！</p>
+      <button class="btn" id="go">点我开启 🎉</button>
+      <div class="hint">（建议打开声音哦🔊）</div>
+    </div>
+  </div>
+  <footer>Made with ♥</footer>
+
+  <script>
+    const cvs = document.getElementById('bgStars');
+    const ctx = cvs.getContext('2d');
+    let W, H, stars = [];
+    function resize(){ W = cvs.width = innerWidth; H = cvs.height = innerHeight; }
+    addEventListener('resize', resize, {passive:true}); resize();
+    function gen(){
+      stars = Array.from({length: Math.min(220, Math.floor(W*H/8000))}, ()=>({
+        x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.4+0.2, a: Math.random()*1, v: Math.random()*0.6+0.2
+      }));
+    }
+    gen();
+    function tick(t){
+      ctx.clearRect(0,0,W,H);
+      for(const s of stars){
+        s.a += 0.02*s.v; const b = 0.5 + Math.sin(s.a)*0.5;
+        ctx.globalAlpha = 0.2 + b*0.8; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    document.getElementById('go').addEventListener('click', () => {
+      const params = new URLSearchParams({ play: '1' });
+      location.href = 'birthday.html?' + params.toString();
+    });
+  </script>
+</body>
+</html>
