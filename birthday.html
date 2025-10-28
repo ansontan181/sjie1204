@@ -43,6 +43,47 @@
     padding:10px 14px; border-radius:12px; border:0; font-weight:900; font-size:14px; cursor:pointer;
     background: linear-gradient(180deg,#fff,#eaeaea); color:#111; box-shadow:0 10px 20px #0005, inset 0 -2px 0 #ccc;
   }
+
+  /* 右下快捷按钮（胆小勿点与生日快乐） */
+  #scaryBtn{
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    background: red;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 1000;
+  }
+
+  #scaryBox{
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    background: black;
+    z-index: 9999;
+  }
+
+  /* 右下 浮动小按钮（保持和原风格相近） */
+  .float-btn {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 1000;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: linear-gradient(180deg,#b1ffd6,#b7eaff);
+    box-shadow: 0 12px 26px #7ff2c744;
+    font-weight:800;
+    color:#0a2;
+  }
 </style>
 </head>
 <body>
@@ -63,39 +104,19 @@
       <div class="actions">
         <button class="btn" id="replay">再放一波烟花</button>
         <button class="btn" id="cakeBtn">🍰 我感觉你会想揍我</button>
+        <!-- 新增：与 cakeBtn 同一行的生日快乐按钮 -->
+        <button class="btn" id="exoBtn" style="background: linear-gradient(180deg,#84fab0,#8fd3f4); color:#001; box-shadow:0 10px 20px #84fab044, inset 0 -2px 0 #6ac5d6;">
+          🎉 生日快乐
+        </button>
       </div>
     </div>
   </div>
 
 <!-- 胆小勿点按钮 -->
-<button id="scaryBtn" style="
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 20px;
-  font-size: 16px;
-  font-weight: bold;
-  color: white;
-  background: red;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  z-index: 1000;
-">
-  胆小勿点
-</button>
+<button id="scaryBtn">胆小勿点</button>
 
-<!-- 用来显示图片 -->
-<div id="scaryBox" style="
-  position: fixed;
-  top:0; left:0; right:0; bottom:0;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  background: black;
-  z-index: 9999;
-">
+<!-- 用来显示图片（胆小勿点弹图） -->
+<div id="scaryBox">
   <img id="scaryImg" src="" style="max-width:100%; max-height:100%; object-fit:contain;">
 </div>
 
@@ -124,10 +145,19 @@ scaryBtn.addEventListener("click", () => {
   <!-- 背景音乐：不预设 src，不默认循环，按逻辑切换 -->
   <audio id="bgm" preload="auto"></audio>
 
+  <!-- 蛋糕视频弹层（原有） -->
   <div class="video-overlay" id="videoOverlay" role="dialog" aria-label="蛋糕视频">
     <button class="close-btn" id="closeVideo">关闭 ✕</button>
     <div class="video-wrap">
       <video id="cakeVideo" src="2.mp4?v=highfix" playsinline webkit-playsinline controls preload="auto"></video>
+    </div>
+  </div>
+
+  <!-- 新增 EXO 视频弹层 -->
+  <div class="video-overlay" id="exoOverlay" role="dialog" aria-label="EXO视频">
+    <button class="close-btn" id="closeExo">关闭 ✕</button>
+    <div class="video-wrap">
+      <video id="exoVideo" src="exo.mp4" playsinline webkit-playsinline controls preload="auto"></video>
     </div>
   </div>
 
@@ -267,6 +297,41 @@ try{
     cakeVideo.addEventListener('ended', closeOverlay);
   }
 }catch(err){ console.error('Video overlay error:', err); }
+
+/* ====== EXO 视频弹层逻辑（新增） ====== */
+try {
+  const exoBtn = document.getElementById('exoBtn');
+  const exoOverlay = document.getElementById('exoOverlay');
+  const exoVideo = document.getElementById('exoVideo');
+  const closeExo = document.getElementById('closeExo');
+  const bgm = document.getElementById('bgm');
+
+  if (exoBtn && exoOverlay && exoVideo && closeExo) {
+    exoBtn.addEventListener('click', async () => {
+      exoOverlay.classList.add('show');
+      try { bgm.pause(); } catch (e) {}
+
+      try {
+        exoVideo.currentTime = 0;
+        await exoVideo.play();
+      } catch (e) {
+        console.warn('播放 exo.mp4 失败:', e);
+      }
+    });
+
+    function closeExoOverlay() {
+      try { exoVideo.pause(); exoVideo.currentTime = 0; } catch (e) {}
+      exoOverlay.classList.remove('show');
+      setTimeout(() => { try { bgm.play(); } catch (e) {} }, 50);
+    }
+
+    closeExo.addEventListener('click', closeExoOverlay);
+    exoOverlay.addEventListener('click', e => { if (e.target === exoOverlay) closeExoOverlay(); });
+    exoVideo.addEventListener('ended', closeExoOverlay);
+  }
+} catch (err) {
+  console.error('EXO视频逻辑出错:', err);
+}
 </script>
 </body>
 </html>
